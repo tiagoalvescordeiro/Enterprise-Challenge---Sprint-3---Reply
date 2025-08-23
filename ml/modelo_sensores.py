@@ -1,75 +1,104 @@
 import os
-import numpy as np
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-def carregar_dados(caminho="data/dados.csv", n=400, seed=42):
-    """Lê data/dados.csv (target na coluna 'target'); se não existir, gera sintético."""
-    os.makedirs("data", exist_ok=True)
+def gerar_dados(caminho_csv='data/sensores.csv', n_sensors=6, n_per_sensor=500, seed=42):
+    """Gera dados sintéticos de sensores e salva em CSV."""
+    np.random.seed(seed)
+    rows = []
+    for sensor_id in range(1, n_sensors + 1):
+        temp = np.random.normal(70 + sensor_id * 2, 10, n_per_sensor)
+        vib = np.random.normal(5 + sensor_id * 0.5, 2, n_per_sensor)
+        for t, v in zip(temp, vib):
+            if t < 75 and v < 6:
+                estado = 'Normal'
+            elif (75 <= t < 90) or (6 <= v < 9):
+                estado = 'Alerta'
+            else:
+                estado = 'Crítico'
+            rows.append({
+                'id_sensor': sensor_id,
+                'temperatura': round(float(t), 2),
+                'vibracao': round(float(v), 2),
+                'estado': estado
+            })
+    df = pd.DataFrame(rows)
+    os.makedirs(os.path.dirname(caminho_csv), exist_ok=True)
+    df.to_csv(caminho_csv, index=False)
+    return df
 
-    if os.path.exists(caminho):
-        df = pd.read_csv(caminho)
-        X = df.drop(columns=["target"]).values
-        y = df["target"].values
-        print(f"Dados carregados de {caminho} -> {df.shape}")
-        return X, y
+def carregar_dados(caminho_csv='data/sensores.csv'):
+    """Carrega o CSV de sensores. Se não existir, gera novos dados."""
+    if not os.path.exists(caminho_csv):
+        df = gerar_dados(caminho_csv)
+    else:
+        df = pd.read_csv(caminho_csv)
+    return df
 
-    X, y = make_classification(
-        n_samples=n, n_features=3, n_informative=3, n_redundant=0,
-        n_classes=2, random_state=seed
-    )
-    cols = ["feat_1", "feat_2", "feat_3"]
-    pd.DataFrame(np.c_[X, y], columns=cols + ["target"]).to_csv(caminho, index=False)
-    print(f"Dados sintéticos gerados e salvos em {caminho}")
-    return X, y
-
-def treinar_modelo(dados):
-    X, y = dados
+def treinar_modelo(X, y):
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.30, random_state=42, stratify=y
+        X, y, test_size=0.2, random_state=42, stratify=y
     )
-    modelo = LogisticRegression(solver="liblinear", random_state=42)
+    modelo = RandomForestClassifier(random_state=42)
     modelo.fit(X_train, y_train)
     return modelo, X_test, y_test
 
 def avaliar_modelo(modelo, X_test, y_test):
     y_pred = modelo.predict(X_test)
-    relatorio = classification_report(y_test, y_pred, digits=4)
-    cm = confusion_matrix(y_test, y_pred)
-    print("\nMétricas de Classificação:\n", relatorio)
-    print("Matriz de Confusão:\n", cm)
-    return relatorio, cm
+    acc = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, digits=4)
+    cm = confusion_matrix(y_test, y_pred, labels=modelo.classes_)
+    return acc, report, cm
 
-def salvar_metricas(texto, caminho="ml/metrics.txt"):
+def salvar_metrics(acc, report, caminho='ml/metrics.txt'):
     os.makedirs(os.path.dirname(caminho), exist_ok=True)
-    with open(caminho, "w", encoding="utf-8") as f:
-        f.write(texto)
+    with open(caminho, 'w') as f:
+        f.write(f'Accuracy: {acc:.4f}\n')
+        f.write(report)
 
-def plotar_matriz_confusao(cm, caminho="docs/matriz_confusao.png"):
+def plotar_matriz_confusao(cm, labels, caminho='docs/matriz_confusao.png'):
     os.makedirs(os.path.dirname(caminho), exist_ok=True)
     plt.figure()
-    plt.imshow(cm, cmap="Blues")
-    plt.title("Matriz de Confusão")
-    plt.xlabel("Predito")
-    plt.ylabel("Real")
-    for (i, j), v in np.ndenumerate(cm):
-        plt.text(j, i, str(v), ha="center", va="center")
-    plt.colorbar()
+    plt.imshow(cm, interpolation='nearest')
+    plt.title('Matriz de Confusão')
+    plt.xlabel('Previsto')
+    plt.ylabel('Real')
+    plt.xticks(range(len(labels)), labels, rotation=45)
+    plt.yticks(range(len(labels)), labels)
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, cm[i, j], ha='center', va='center')
     plt.tight_layout()
     plt.savefig(caminho)
     plt.close()
 
-def plotar_scatter(X, y, caminho="docs/scatter.png"):
+def plotar_scatter(df, caminho='docs/scatter.png'):
     os.makedirs(os.path.dirname(caminho), exist_ok=True)
     plt.figure()
-    plt.scatter(X[:, 0], X[:, 1], c=y)
-    plt.title("Dispersão (duas primeiras features)")
-    plt.xlabel("feat_1")
-    plt.ylabel("feat_2")
+    class_to_int = {c: i for i, c in enumerate(df['estado'].unique())}
+    colors = [class_to_int[c] for c in df['estado']]
+    plt.scatter(df['temperatura'], df['vibracao'], c=colors)
+    plt.title('Dispersão das leituras de sensores')
+    plt.xlabel('Temperatura')
+    plt.ylabel('Vibração')
     plt.tight_layout()
     plt.savefig(caminho)
     plt.close()
+
+def main():
+    df = carregar_dados()
+    X = df[['temperatura', 'vibracao']]
+    y = df['estado']
+    modelo, X_test, y_test = treinar_modelo(X, y)
+    acc, report, cm = avaliar_modelo(modelo, X_test, y_test)
+    salvar_metrics(acc, report)
+    plotar_matriz_confusao(cm, modelo.classes_)
+    plotar_scatter(df)
+    print(f'Accuracy: {acc:.4f}')
+
+if __name__ == '__main__':
+    main()
