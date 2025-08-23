@@ -1,6 +1,6 @@
 # Relatório de Execução — Sprint 3
 
-**Data/Hora:** 2025-08-23 18:18
+**Data/Hora:** 2025-08-23 18:21
 
 ## Métricas (classification_report)
 
