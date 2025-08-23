@@ -1,123 +1,74 @@
-Hermes Reply – Sprint 3 (Fase 5)
+Hermes Reply – Sprint 3 (Fase 5)
 
-Este repositório contém a solução completa para o desafio Hermes Reply (Fase 5) da FIAP. O objetivo é construir um pequeno sistema que integre Banco de Dados, Machine Learning e uma documentação estruturada para monitorar sensores em um ambiente industrial. Todo o conteúdo está em português para facilitar a compreensão.
+Este repositório contém a solução para o desafio Hermes Reply (Fase 5) da FIAP. O objetivo é construir um sistema que integre um banco de dados relacional, um modelo de machine learning e uma documentação clara para monitorar sensores e manutenções em um ambiente industrial.
 
-🗂 Estrutura do Repositório
-├── db          # Modelagem e scripts SQL
-│   ├── der.txt
-│   └── script.sql
-├── ml          # Código de Machine Learning e métricas
-│   ├── main.py
-│   └── metrics.txt
-├── data        # Conjunto de dados (CSV) utilizado no modelo
-│   └── dataset.csv
-├── docs        # Imagens geradas (gráficos, matriz de confusão)
-│   ├── matriz_confusao.png
-│   ├── scatter.png
-│   └── bar_chart.png
-└── README.md   # Este documento
+## Estrutura do repositório
 
-Introdução
+- **db/** – Artefatos do banco de dados:
+  - **der_textual.md** – descrição textual do modelo relacional, listando entidades, atributos e relacionamentos.
+  - **script_postgres.sql** – script DDL para PostgreSQL com criação de tabelas, chaves primárias, estrangeiras e índices.
 
-Sensores industriais coletam continuamente dados como temperatura e vibração. Interpretar esses dados de forma automática pode ajudar a identificar anomalias e acionar alarmes. Neste projeto, definimos uma tarefa de classificação que categoriza o estado do sensor em três níveis:
+- **data/** – Conjunto de dados usado no modelo de machine learning:
+  - **sensores.csv** – dataset simulado com 6 sensores e 500 leituras por sensor (3 000 linhas). Colunas: `id_sensor`, `temperatura`, `vibracao` e `estado`. O rótulo `estado` é definido por regras que combinam temperatura e vibração.
 
-Normal – operação dentro dos limites esperados.
+- **ml/** – Código e saías de machine learning:
+  - **modelo_sensores.py** – script em Python (scikit‑learn) que gera o dataset, treina um classificador Random Forest, avalia o modelo e salva métricas e gráficos.
+  - **metrics.txt** – arquivo com a acurácia e o relatório de classificação gerados pelo modelo.
 
-Alerta – valores moderadamente elevados.
+- **docs/** – Visualizações geradas:
+  - **matriz_confusao.png** – matriz de confusão das previsões.
+  - **scatter.png** – gráfico de dispersão de temperatura versus vibração colorido pelo estado.
 
-Crítico – condições que exigem intervenção imediata.
+- **main.py** – ponto de entrada opcional.
+- **requirements.txt** – dependências Python necessárias.
 
-Além do modelo de ML, foi projetado um banco relacional para persistir esses dados de forma estruturada.
+## Banco de dados
 
-🗄 Banco de Dados
-DER textual
+O modelo relacional compreende cinco entidades: **Equipamento**, **Sensor**, **Leitura**, **Manutencao** e **Alerta**. Cada equipamento possui vários sensores; sensores geram diversas leituras; uma leitura pode gerar nenhum ou um alerta; e equipamentos podem ter várias manutenções. As cardinalidades principais são 1:N (com exceção de Leitura–Alerta que é 0:1). O script SQL define as seguintes tabelas:
 
-O documento db/der.txt
- descreve as entidades, atributos e relacionamentos de forma detalhada. As principais tabelas são:
+- **Equipamento** (`id_equipamento`, `nome`, `descricao`, `setor`)
+- **Sensor** (`id_sensor`, `tipo`, `localizacao`, `descricao`, `id_equipamento`)
+- **Leitura** (`id_leitura`, `id_sensor`, `timestamp`, `valor`, `unidade`)
+- **Alerta** (`id_alerta`, `id_leitura`, `nivel`, `mensagem`)
+- **Manutencao** (`id_manutencao`, `id_equipamento`, `data_inicio`, `data_fim`, `descricao`)
 
-Sensor – armazena metadados dos sensores (sensor_id, nome, localizacao).
+Chaves estrangeiras garantem a integridade referencial entre as tabelas. Índices adicionais são definidos em colunas consultadas com frequência, como `tipo` de sensor e chaves estrangeiras.
 
-Estado – normaliza os estados possíveis (estado_id, descricao).
+## Modelo de machine learning
 
-Leitura – registra cada observação com data/hora, temperatura, vibração, além de chaves estrangeiras para Sensor e Estado.
+A tarefa de machine learning consiste em classificar o estado de operação de um sensor em **Normal**, **Alerta** ou **Crítico** a partir de medições de temperatura e vibração. Para isso, foi utilizado um **RandomForestClassifier** do Scikit‑learn, pois lida bem com limites não lineares e múltiplas classes.
 
-O relacionamento Sensor 1:N Leitura indica que um sensor pode ter várias leituras ao longo do tempo. Da mesma forma, Estado 1:N Leitura conecta cada leitura ao estado classificado.
+O dataset é artificialmente gerado com distribuições normais em torno de valores típicos. As classes são definidas por regras simples:
 
-Script SQL
+- **Normal** – `temperatura < 75` e `vibracao < 6`
+- **Alerta** – `75 ≤ temperatura < 90` ou `6 ≤ vibracao < 9`
+- **Crítico** – `temperatura ≥ 90` ou `vibracao ≥ 9`
 
-O script db/script.sql
- cria as tabelas, chaves primárias e estrangeiras, insere os estados padrão e define índices para otimizar consultas. Para executar o script:
+O script divide os dados em conjuntos de treino (80%) e teste (20%), treina o modelo e avalia a performance. A saída inclui a acurácia geral e um relatório de classificação (precisão, recall e F1‑score por classe), além de gráficos para a matriz de confusão e a distribuição dos dados.
 
-Crie um banco de dados PostgreSQL (ou outro SGDB compatível).
+## Como executar
 
-Execute o conteúdo de script.sql no console do banco ou via ferramenta gráfica.
+1. Instale as dependências:
 
-Use a tabela Sensor para cadastrar seus dispositivos antes de inserir leituras.
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # No Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-🤖 Machine Learning
-Criação do Dataset
+2. Rode o script de machine learning:
 
-Um dataset artificial foi gerado contendo 1 500 leituras (3 sensores × 500 amostras), com colunas de temperatura, vibracao e o estado calculado (Normal, Alerta ou Crítico). O arquivo CSV está em data/dataset.csv
-. Os valores foram simulados com distribuição normal e regras de negócio simples:
+   ```bash
+   python ml/modelo_sensores.py
+   ```
 
-Leituras com temperatura muito alta (>80 °C) ou vibração muito alta (>6) são rotuladas como Crítico.
+   Isso irá gerar (ou atualizar) o dataset em `data/sensores.csv`, treinar o modelo e salvar os resultados em `ml/metrics.txt` e os gráficos em `docs/`.
 
-Leituras com temperatura moderada (>60 °C) ou vibração moderada (>4) são Alerta.
+3. Crie o banco de dados:
 
-Demais leituras são Normais.
+   ```sql
+   -- No psql
+   \i db/script_postgres.sql
+   ```
 
-Implementação do Modelo
-
-O código ml/main.py
- lê o CSV, codifica as classes, separa os dados em treino/teste (70/30), treina um modelo de Regressão Logística e gera métricas e gráficos. A escolha da Regressão Logística deve‑se à sua simplicidade e capacidade de lidar bem com problemas lineares multiclasse.
-
-O script produz:
-
-Relatório de métricas de classificação (precisão, recall, f1‑score) salvo em ml/metrics.txt
-.
-
-Matriz de Confusão (docs/matriz_confusao.png) para visualizar erros e acertos do modelo.
-
-Gráfico de Dispersão (docs/scatter.png) mostrando a distribuição das leituras por estado.
-
-Gráfico de Barras (docs/bar_chart.png) indicando o número de registros de cada classe.
-
-Principais Resultados
-
-O modelo alcançou boa performance, com métricas de precisão e recall superiores a 90 % para as classes Normal e Crítico, e cerca de 85 % para a classe Alerta. Veja o relatório completo em ml/metrics.txt
-.
-
-🚀 Instruções de Execução
-
-Preparar Ambiente – Instale as dependências executando:
-
-pip install -r requirements.txt
-
-
-Executar SQL – Crie as tabelas do banco conforme db/script.sql.
-
-Gerar Dataset (Opcional) – O CSV já está pronto, mas você pode regenerá‑lo com seu próprio script ou modificar a geração conforme necessário.
-
-Treinar o Modelo – Execute o script de ML:
-
-cd ml
-python main.py
-
-
-Visualizar Resultados – Após a execução, consulte os arquivos em ml/metrics.txt e docs/*.png para entender a performance e os gráficos.
-
-🎬 Roteiro para Vídeo (≤ 5 min)
-
-Introdução (30 s) – Apresentar o contexto do desafio Hermes Reply, a importância de monitorar sensores industriais e os objetivos do projeto.
-
-Banco de Dados (60 s) – Explicar a modelagem relacional. Descrever as entidades Sensor, Estado e Leitura, destacando as cardinalidades e justificando a normalização.
-
-Machine Learning (90 s) – Mostrar como o dataset foi gerado, quais características foram consideradas e por que a Regressão Logística foi escolhida. Apontar como o código está organizado e comentado.
-
-Resultados (60 s) – Exibir rapidamente a matriz de confusão e os gráficos gerados, destacando as métricas principais.
-
-Conclusão (30 s) – Resumir aprendizados, possíveis melhorias (ex.: usar dados reais, testar outros algoritmos) e convidar os espectadores a explorar o repositório.
-
-📹 Link do Vídeo
-
-Adicionar aqui o link para o vídeo explicativo assim que for gravado e hospedado.
+Esse projeto integra modelagem de dados e classificação automática para mostrar como sensoriamento industrial pode ser estruturado em um banco de dados e analisado por machine learning para auxiliar na manutenção e monitoramento de equipamentos.
