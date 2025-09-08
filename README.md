@@ -32,7 +32,16 @@ O modelo relacional compreende cinco entidades: **Equipamento**, **Sensor**, **L
 - **Alerta** (`id_alerta`, `id_leitura`, `nivel`, `mensagem`)
 - **Manutencao** (`id_manutencao`, `id_equipamento`, `data_inicio`, `data_fim`, `descricao`)
 
-Chaves estrangeiras garantem a integridade referencial entre as tabelas. Índices adicionais são definidos em colunas consultadas com frequência, como `tipo` de sensor e chaves estrangeiras.
+Chaves estrangeiras garantem a integridade referencial entre as tabelas. Índices adicionais são definidos em colunas consultadas com frequência, como 
+
+### Diagrama ER
+
+A modelagem do banco de dados resultou em um **Diagrama Entidade-Relacionamento (DER)** que ilustra as entidades e seus relacionamentos. O diagrama detalha as cinco entidades principais (Equipamento, Sensor, Leitura, Alerta e Manutencao) e suas chaves primárias e estrangeiras.
+
+![Diagrama ER](docs/er_diagram.png)
+
+Este diagrama foi gerado com base no script SQL e facilita a visualização da estrutura relacional do banco de dados.
+`tipo` de sensor e chaves estrangeiras.
 
 ## Modelo de machine learning
 
