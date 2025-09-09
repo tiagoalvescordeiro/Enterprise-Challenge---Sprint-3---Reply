@@ -81,3 +81,18 @@ O script divide os dados em conjuntos de treino (80%) e teste (20%), treina o mo
    ```
 
 Esse projeto integra modelagem de dados e classificação automática para mostrar como sensoriamento industrial pode ser estruturado em um banco de dados e analisado por machine learning para auxiliar na manutenção e monitoramento de equipamentos.
+
+## Leituras por sensor
+
+O dataset `data/sensores.csv` contém 3 000 leituras (500 para cada um dos seis sensores). Abaixo, a contagem de leituras por `id_sensor`:
+
+- Sensor 1: 500 leituras
+- Sensor 2: 500 leituras
+- Sensor 3: 500 leituras
+- Sensor 4: 500 leituras
+- Sensor 5: 500 leituras
+- Sensor 6: 500 leituras
+
+## Vídeo de apresentação
+
+Inclua aqui o link para o vídeo (não listado no YouTube) com até 5 minutos explicando e justificando o projeto desta fase.
