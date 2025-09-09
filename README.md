@@ -93,6 +93,4 @@ O dataset `data/sensores.csv` contém 3 000 leituras (500 para cada um dos seis
 - Sensor 5: 500 leituras
 - Sensor 6: 500 leituras
 
-## Vídeo de apresentação
 
-Inclua aqui o link para o vídeo (não listado no YouTube) com até 5 minutos explicando e justificando o projeto desta fase.
